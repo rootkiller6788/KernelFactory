@@ -144,6 +144,25 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 # --------------------------------------------------------------------- 子命令
+def _acceptance_failed(acc: dict[str, Any]) -> bool:
+    """验收门槛或对抗用例任一失败 ⇒ 进程必须用非零 rc 报出去。
+
+    ⚠️ 「打印了失败」不等于「命令失败」。`run` 若不把结论映射到 rc，
+    CI/脚本里的 `python main.py run` 在验收全红时仍然 rc=0 ——
+    产物里写得很清楚，而调用方看不见。
+    """
+    return bool(acc.get("failed")) or bool(acc.get("n_cases_failed"))
+
+
+def _mismatched_reports(rows: list[dict[str, Any]]) -> list[str]:
+    """只把「**存在且不一致**」的视图算作不一致。
+
+    产物缺失时 `_products_for_readonly` 会在内存里重跑并在 note 里明说；
+    那属于「没有可比对的对象」，不是「比对失败」。
+    """
+    return [r["file"] for r in rows if r["exists"] and not r["identical"]]
+
+
 def _resolve(args: argparse.Namespace) -> tuple[dict[str, Any], Path]:
     cfg = load_config(getattr(args, "config", None), root=args.root)
     out = Path(getattr(args, "out", None) or (args.root / "out"))
@@ -193,7 +212,7 @@ def cmd_run(args: argparse.Namespace) -> int:
                     "cases_failed": acc["failed_cases"],
                     "refuted": [i["name"] for i in exp["items"]
                                 if i["verdict"] == "refuted"]})
-    return 0
+    return 0 if not _acceptance_failed(acc) else 1
 
 
 def _products_for_readonly(args: argparse.Namespace) -> tuple[dict[str, Any], bool, str]:
@@ -240,10 +259,12 @@ def cmd_visualize(args: argparse.Namespace) -> int:
             rows.append({"file": name, "exists": existing is not None,
                          "identical": existing == text,
                          "rebuilt_bytes": len(text.encode("utf-8"))})
+        mismatch = _mismatched_reports(rows)
         result = {
             "cmd": "visualize", "out": str(out), "read_only": not written,
             "in_memory_rerun": reran, "note": note or "只读：未写盘。",
             "files": rows, "all_identical": all(r["identical"] for r in rows),
+            "mismatch": mismatch,
             "written": written,
         }
         if not json_mode:
@@ -257,7 +278,7 @@ def cmd_visualize(args: argparse.Namespace) -> int:
                 print(f"  写出 {w}")
     if json_mode:
         _emit_json(result)
-    return 0
+    return 0 if not result["mismatch"] else 1
 
 
 def cmd_check(args: argparse.Namespace) -> int:

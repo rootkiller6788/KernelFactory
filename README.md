@@ -270,9 +270,9 @@ python main.py dump-config      # ⚠️ **写盘**：把当前生效的配置�
 
 | 命令 | 写盘 | 说明 |
 | --- | --- | --- |
-| `run` | ✅ **会写盘**（写 `out/`） | 全流水线；`--config` / `--out` 相对路径**按项目根解析** |
+| `run` | ✅ **会写盘**（写 `out/`） | 全流水线；`--config` / `--out` 相对路径**按项目根解析**；验收门槛或对抗用例未通过则 `rc=1` |
 | `check` | ❌ 只读 | 重跑验收；有任何门槛未通过则 `rc=1` |
-| `visualize` | ❌ 只读（`--target` 时才写到别处） | 从产物重建 `report.md`/`report.html` 并逐位比对 |
+| `visualize` | ❌ 只读（`--target` 时才写到别处） | 从产物重建 `report.md`/`report.html` 并逐位比对；**存在且不一致**则 `rc=1`（产物缺失时的内存重跑不算不一致） |
 | `verify` | ❌ 只读（只写临时目录，跑完删） | 两次 `run` 逐位比 + 产物充分性 |
 | `show` | ❌ 只读 | 摘要 |
 | `dump-config` | ✅ **会写盘**（写 `configs/default.json`） | 改完 `config.py` 的 `DEFAULTS` 后**必须**跑它（见下） |
