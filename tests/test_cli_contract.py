@@ -4,6 +4,8 @@
 """
 from __future__ import annotations
 
+import json
+import os
 import re
 import subprocess
 import sys
@@ -16,10 +18,14 @@ MAIN = ROOT / "main.py"
 
 
 def run_cli(*args: str) -> subprocess.CompletedProcess:
+    # ⚠️ 故意**剥掉** UTF-8 相关环境变量：测试要验证 CLI 自己在 locale 编码
+    #    （Windows 上是 GBK）下也能输出 UTF-8，而不是靠调用者预先设好环境。
+    env = {k: v for k, v in os.environ.items()
+           if k not in ("PYTHONIOENCODING", "PYTHONUTF8")}
     return subprocess.run(
         [sys.executable, str(MAIN), *args],
         cwd=ROOT, capture_output=True, text=True,
-        encoding="utf-8", errors="replace",
+        encoding="utf-8", errors="replace", env=env,
     )
 
 
@@ -57,3 +63,36 @@ def test_check_exit_zero() -> None:
         pytest.skip("本项目没有 check 子命令")
     r = run_cli("check")
     assert r.returncode == 0, (r.stdout + r.stderr)[-2000:]
+
+
+def test_help_survives_non_utf8_locale() -> None:
+    """`--help` 在 locale 编码（GBK）下也必须 rc=0，且是 UTF-8 可解码的。"""
+    r = run_cli("--help")
+    assert r.returncode == 0, r.stderr
+    assert "会写盘" in r.stdout
+
+
+@pytest.mark.parametrize("cmd", ["run", "visualize", "check",
+                                 "verify", "show", "dump-config"])
+def test_each_help_has_exactly_one_write_marker(cmd: str) -> None:
+    """A.3 契约的机器侧：每个子命令恰好一个 `会写盘` / `只读` 标记。"""
+    out = run_cli(cmd, "--help").stdout
+    assert ("会写盘" in out) + ("只读" in out) == 1, out
+
+
+def test_check_json_is_exactly_one_document() -> None:
+    """`--json` 的 stdout 上只许有一段 JSON（可直接 `| jq`）。"""
+    r = run_cli("check", "--json")
+    assert r.returncode == 0, (r.stdout + r.stderr)[-2000:]
+    doc = json.loads(r.stdout)          # 整个 stdout 必须正好是一段 JSON
+    assert doc["cmd"] == "check"
+    assert doc["acceptance"]["n"] >= 18
+    assert isinstance(doc["in_memory_rerun"], bool)
+
+
+def test_show_json_is_exactly_one_document() -> None:
+    r = run_cli("show", "--json")
+    assert r.returncode == 0, (r.stdout + r.stderr)[-2000:]
+    doc = json.loads(r.stdout)
+    assert doc["cmd"] == "show"
+    assert doc["summary"]["n_ops"] == 3
