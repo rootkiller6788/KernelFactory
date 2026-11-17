@@ -35,6 +35,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from kernelfactory.invariants import _CASES, run_cases          # noqa: E402
+from _output import configure_utf8                              # noqa: E402
 
 SEED = 20261002
 BUDGET_S = 900.0
@@ -352,6 +353,7 @@ def run_targeted(base: dict, out_dir: Path) -> tuple[int, list[str]]:
 
 # ----------------------------------------------------------------- 主流程
 def main() -> int:
+    configure_utf8()
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="out")
     ap.add_argument("--per-kind", type=int, default=40)

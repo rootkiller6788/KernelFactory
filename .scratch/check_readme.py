@@ -31,12 +31,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 README = ROOT / "README.md"
 
+from _output import configure_utf8  # noqa: E402  （脚本目录在 sys.path 上）
+
 #: 数字 token：前后不许紧贴字母或小数点（于是 `C.317`、`v1-1e5ab0…`、`L6` 都不算）
 TOKEN = re.compile(r"(?<![\w.])[-−–]?\d+(?:\.\d+)?(?:[eE][-−]?\d+)?(?![\w.])")
 
 #: 手测 / 派生 —— **每一项都必须写理由**，否则这张表会变成「随手加数字的地方」
 MANUAL: dict[str, str] = {
-    "11.1": "`run` 的墙钟耗时（subprocess 计时），产物里只有流水线内部计时",
+    "12.1": "`run` 的墙钟耗时（subprocess 计时），产物里只有流水线内部计时",
     "23.0": "`verify` 的墙钟耗时（它跑两次 run），不在产物里",
     "0.41": "`visualize` 的墙钟耗时（只读重建），不在产物里",
     "17": "`ladder.json` 从 3.4 MB 降到 2.81 MB 的降幅百分比（3.4 来自历史运行）",
@@ -170,6 +172,7 @@ def cli_contract(text: str) -> list[str]:
 
 
 def main() -> int:
+    configure_utf8()
     products = {f.name: json.loads(f.read_text(encoding="utf-8"))
                 for f in sorted((ROOT / "out").glob("*.json"))}
     if not products:

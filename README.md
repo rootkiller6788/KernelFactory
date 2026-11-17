@@ -259,7 +259,7 @@ L6-kernelfactory/
 
 ```bash
 cd L6-kernelfactory
-python main.py run              # 端到端跑通并落盘（~11 s）
+python main.py run              # 端到端跑通并落盘（~12 s）
 python main.py check            # 只读：重跑验收（rc=1 表示有门槛未通过）
 python main.py visualize        # 只读：从 out/ 重建报告并比对（~0.4 s）
 python main.py verify           # 只读：确定性与产物充分性核对（~23 s）
@@ -342,7 +342,7 @@ python main.py dump-config      # ⚠️ **写盘**：把当前生效的配置�
 
 | 项 | 值 |
 | --- | --- |
-| `run` 端到端 | **11.1 s**（进程墙钟；内部 `main` 8.77 s + `benchmark` 0.05 s） |
+| `run` 端到端 | **12.1 s**（进程墙钟；内部 `main` 9.99 s + `benchmark` 0.05 s） |
 | `verify`（两次 run + 逐位比 + 充分性） | 23.0 s |
 | `visualize`（从产物重建，不跑流水线） | **0.41 s** |
 | 数值内核真算次数 / 缓存命中 | 192 / 12444（**命中率 0.9848**） |
@@ -598,18 +598,18 @@ python main.py dump-config      # ⚠️ **写盘**：把当前生效的配置�
 
 > 这三行的**右两列随机器变**（它们是实测耗时），所以**不进版本摘要**，
 > 只落在 `benchmark.json` 里（见 C.286 那条纪律）。
-> 下面这一组来自**最后一次 `run`**（`version.json.created_at` = `2026-10-02T15:42:32+00:00`）。
+> 下面这一组来自**最后一次 `run`**（`version.json.created_at` = `2026-11-17T14:48:53+00:00`）。
 
 | 算子 | 交付物 | 解析延迟 | 实测求值耗时 | 比值 |
 | --- | --- | ---: | ---: | ---: |
-| layernorm | `fp32/T1x32x1/w2/s3/vec/v2/pipe` | 646.52 µs | 2186.10 µs | 3.38 |
-| matmul | `fp32/T16x32x32/w4/s3/vec/v2/pipe` | 22.81 µs | 33730.00 µs | 1478.9 |
-| softmax | `fp32/T1x32x1/w2/s3/vec/v2/pipe` | 644.02 µs | 3400.00 µs | 5.28 |
+| layernorm | `fp32/T1x32x1/w2/s3/vec/v2/pipe` | 646.52 µs | 2238.30 µs | 3.46 |
+| matmul | `fp32/T16x32x32/w4/s3/vec/v2/pipe` | 22.81 µs | 35986.90 µs | 1577.8 |
+| softmax | `fp32/T1x32x1/w2/s3/vec/v2/pipe` | 644.02 µs | 2513.60 µs | 3.90 |
 
 ⚠️ **实测只作孪生自身一致性，不作性能。** 本机没有 GPU，「kernel 有多快」
 这个数量不出来；表里右列量的是**纯 Python 模拟跑一遍要多久**，
-与真实 kernel 无关（matmul 的比值 1478.9 就是因为它的解析延迟只有 22.8 µs，
-而 Python 模拟一次要 33.7 ms）。所以 `analytic_latency_tracks_wallclock`
+与真实 kernel 无关（matmul 的比值 1577.8 就是因为它的解析延迟只有 22.8 µs，
+而 Python 模拟一次要 36.0 ms）。所以 `analytic_latency_tracks_wallclock`
 这条期望的裁定是 **`unmeasurable`**（n=1，没有可核的样本）。
 
 ⚠️ **`.scratch/check_readme.py` 会核这三行**：重跑一次 `run` 之后它们就过期，

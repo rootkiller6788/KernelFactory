@@ -27,6 +27,7 @@ from kernelfactory.evaluate import KernelEvaluator, accum_steps, space_scale  # 
 from kernelfactory.genome import enumerate_space                # noqa: E402
 from kernelfactory.numerics import SIGNIFICANT_BITS, effective_bits, expected_bits_bias  # noqa: E402
 from kernelfactory.ops import drift_of                          # noqa: E402
+from _output import configure_utf8                              # noqa: E402
 
 
 def pct(xs: list[float], q: float) -> float:
@@ -38,6 +39,7 @@ def pct(xs: list[float], q: float) -> float:
 
 
 def main() -> int:
+    configure_utf8()
     cfg = json.loads(json.dumps(DEFAULTS))
     t0 = time.perf_counter()
     all_rows: list[dict] = []
