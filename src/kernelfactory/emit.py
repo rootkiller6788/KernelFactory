@@ -29,6 +29,15 @@ from pathlib import Path
 from typing import Any, Callable, Sequence
 
 
+class ProductError(Exception):
+    """产物文件存在，但**不是可用的产物**（非法 JSON / 非 UTF-8）。
+
+    与 `FileNotFoundError` 分开：文件缺失时只读命令可以在内存里重跑；
+    文件存在但内容坏了，重跑也修不好它 —— 必须让使用者看见**是哪个文件坏了**，
+    而不是一条 `JSONDecodeError` traceback。
+    """
+
+
 def canonical_json(obj: Any) -> str:
     return json.dumps(obj, sort_keys=True, ensure_ascii=False, indent=2) + "\n"
 
@@ -113,9 +122,12 @@ def read_products(out_dir: Path, names: Sequence[str]) -> dict[str, Any]:
         p = Path(out_dir) / name
         if not p.exists():
             raise FileNotFoundError(f"产物缺失：{p}")
-        out[name] = json.loads(p.read_text(encoding="utf-8"))
+        try:
+            out[name] = json.loads(p.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+            raise ProductError(f"产物不是合法 JSON：{p} —— {exc}") from exc
     return out
 
 
-__all__ = ["canonical_json", "digest_text", "write_json", "content_version",
-           "emit", "read_products"]
+__all__ = ["ProductError", "canonical_json", "digest_text", "write_json",
+           "content_version", "emit", "read_products"]

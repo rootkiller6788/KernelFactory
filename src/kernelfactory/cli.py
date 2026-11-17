@@ -37,7 +37,7 @@ from typing import Any, Iterator
 
 from . import __version__, pipeline
 from .config import ConfigError, dump_config, load_config
-from .emit import emit
+from .emit import ProductError, emit
 from .report import render_html, render_markdown
 
 ROOT = Path(__file__).resolve().parents[2]     # L6-kernelfactory/
@@ -482,6 +482,9 @@ def main(argv: list[str] | None = None) -> int:
         return _COMMANDS[args.cmd](args)
     except ConfigError as exc:
         print(f"配置错误：{exc}", file=sys.stderr)
+        return 2
+    except ProductError as exc:
+        print(f"产物错误：{exc}", file=sys.stderr)
         return 2
     except BrokenPipeError:
         # `| head` / `| jq` 提前关闭：这不是错误，但也不该留下 traceback。

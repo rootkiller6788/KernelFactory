@@ -60,6 +60,20 @@ def test_visualize_clean_copy_is_zero(tmp_path: Path) -> None:
 
 @pytest.mark.skipif(not (OUT / "summary.json").exists(),
                     reason="需要先跑 `python main.py run` 生成 out/")
+def test_corrupt_product_is_a_clear_error(tmp_path: Path) -> None:
+    """坏产物必须报「哪个文件坏了」并 rc=2，而不是 JSONDecodeError traceback。"""
+    out = tmp_path / "out"
+    shutil.copytree(OUT, out)
+    (out / "summary.json").write_text("{ 这不是 JSON", encoding="utf-8")
+    r = run_cli("visualize", "--out", str(out))
+    assert r.returncode == 2, r.stdout + r.stderr
+    assert "产物错误" in r.stderr
+    assert "summary.json" in r.stderr
+    assert "Traceback" not in r.stderr
+
+
+@pytest.mark.skipif(not (OUT / "summary.json").exists(),
+                    reason="需要先跑 `python main.py run` 生成 out/")
 def test_visualize_mismatch_is_nonzero(tmp_path: Path) -> None:
     out = tmp_path / "out"
     shutil.copytree(OUT, out)
