@@ -41,7 +41,26 @@ from .report import render_html, render_markdown
 
 ROOT = Path(__file__).resolve().parents[2]     # L6-kernelfactory/
 
-_JSON_OUT = sys.stdout                          # 真正的 stdout（供 --json 用）
+
+def _configure_output() -> None:
+    """把 stdout/stderr 统一成 UTF-8 —— **否则中文输出在 Windows 管道上会崩**。
+
+    Windows 上 `sys.stdout` 接管道/文件时默认用 locale 编码（本机是 GBK），
+    而本项目的帮助文本与 JSON 里有 `⚠` / `⇒` 这类字符 ⇒
+    `python main.py --help | ...` 与 `main.py check --json > x.json` 会抛
+    `UnicodeEncodeError`，且错误发生在 argparse 打印帮助时 —— 看起来像命令本身坏了。
+
+    `errors="replace"` 是第二道保险：即使某个奇怪终端真的无法输出 UTF-8，
+    也只会得到一个替换字符，而不是把整条命令打挂。
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:          # 例如被替换成 StringIO
+            continue
+        try:
+            reconfigure(encoding="utf-8", errors="replace")
+        except (ValueError, OSError):    # 已被分离/关闭的流
+            pass
 
 
 @contextlib.contextmanager
@@ -56,8 +75,15 @@ def _quiet_prose(enabled: bool) -> Iterator[None]:
 
 
 def _emit_json(obj: Any) -> None:
-    _JSON_OUT.write(json.dumps(obj, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
-    _JSON_OUT.flush()
+    """写到**当前的** `sys.stdout`。
+
+    ⚠️ 不能在 import 时把 `sys.stdout` 存成模块常量：那样 `redirect_stdout` /
+    pytest 的输出捕获 / 上层重新绑定 stdout 都会失效 —— 而失效方式很隐蔽：
+    JSON 跑到旧流里，测试看到空 stdout。流在调用时取，才是它该被读的时刻。
+    """
+    sys.stdout.write(json.dumps(obj, ensure_ascii=False, indent=2,
+                                sort_keys=True) + "\n")
+    sys.stdout.flush()
 
 
 def _anchor_args(args: argparse.Namespace) -> argparse.Namespace:
@@ -403,6 +429,9 @@ _COMMANDS = {"run": cmd_run, "visualize": cmd_visualize, "check": cmd_check,
 
 
 def main(argv: list[str] | None = None) -> int:
+    # 必须在 `parse_args` **之前**：argparse 打印 `--help` 时就会写 stdout，
+    # 等命令跑起来再改编码已经晚了（第一次 `--help` 就会崩）。
+    _configure_output()
     parser = _build_parser()
     try:
         args = _anchor_args(parser.parse_args(argv))
