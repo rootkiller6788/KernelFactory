@@ -219,7 +219,8 @@ L6-kernelfactory/
 ├── main.py                       入口（只做 sys.path 与调用 cli.main）
 ├── pyproject.toml                requires-python >= 3.12，dependencies = []
 ├── configs/default.json          口径与门槛（**代码里不硬编码阈值**）
-├── src/kernelfactory/            （23 个模块，全部只依赖标准库）
+├── src/kernelfactory/            （24 个模块，全部只依赖标准库）
+│   ├── __main__.py     (  9)     `python -m kernelfactory`（与 main.py 等价）
 │   ├── rng.py          ( 73)     确定性随机（sha256 派生种子，禁内置 hash）
 │   ├── genome.py       (253)     KernelGenome：9 个基因 + 候选空间 + 剪枝 + 空间指纹
 │   ├── ops.py          (523)     三个算子 + 它们的**数值孪生** + 缓存键 + 缓存
@@ -260,6 +261,9 @@ python main.py verify           # 只读：确定性与产物充分性核对（~
 python main.py show             # 只读：打印摘要
 python main.py dump-config      # ⚠️ **写盘**：把当前生效的配置写回 configs/default.json
 ```
+
+`pip install -e .` 之后还可以用 `kernelfactory <cmd>` 或 `python -m kernelfactory <cmd>`
+（同一个 `cli.main`）；不装包时用 `python main.py`。
 
 `--json` 时 stdout 上**只许有一段 JSON**（`main.py check --json | jq` 可用）。
 **完全不写盘的三个命令**（`check` / `visualize` / `show`）不碰任何文件；

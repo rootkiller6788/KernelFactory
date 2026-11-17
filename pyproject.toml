@@ -13,6 +13,10 @@ requires-python = ">=3.12"
 #: 真的把「丢了多少位」测出来 —— 而不是把 kernel 编译出来跑。
 dependencies = []
 
+#: 装包后可直接 `kernelfactory <cmd>`；`python -m kernelfactory <cmd>` 走同一入口。
+[project.scripts]
+kernelfactory = "kernelfactory.cli:main"
+
 [tool.setuptools]
 package-dir = {"" = "src"}
 

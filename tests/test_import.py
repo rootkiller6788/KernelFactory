@@ -8,6 +8,8 @@
 from __future__ import annotations
 
 import importlib
+import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -44,3 +46,19 @@ def test_every_module_imports() -> None:
         except Exception as e:  # noqa: BLE001
             bad.append(f"{n}: {type(e).__name__}: {e}")
     assert not bad, "有模块 import 失败：\n" + "\n".join(bad)
+
+
+def test_python_dash_m_entrypoint() -> None:
+    """`python -m kernelfactory --help` 可用（与 main.py 同一条 CLI）。"""
+    env = dict(os.environ)
+    env["PYTHONPATH"] = str(SRC) + os.pathsep + env.get("PYTHONPATH", "")
+    # 让子进程使用 src/ 下的包，而不是已安装的旧版本（若有）。
+    for key in ("PYTHONIOENCODING", "PYTHONUTF8"):
+        env.pop(key, None)
+    r = subprocess.run(
+        [sys.executable, "-m", "kernelfactory", "--help"],
+        cwd=ROOT, env=env, capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+    assert r.returncode == 0, r.stderr
+    assert "kernelfactory" in r.stdout
