@@ -1,0 +1,314 @@
+{
+  "acceptance": {
+    "max_answer_dishonest_rate": 0.0,
+    "max_answer_infeasible_rate": 0.0,
+    "max_greedy_gap_vs_oracle": 0.35,
+    "max_structural_failures": 0,
+    "min_acceptance_checks": 18,
+    "min_adversarial_cases": 30,
+    "min_distinct_accum_dtypes": 3,
+    "min_distinct_effective_bits": 3,
+    "min_distinct_objective_vectors": 100,
+    "min_frontier_points": 2,
+    "min_ladder_speedup_gain": 1.0,
+    "min_monotone_strategies": 2,
+    "min_ops": 3,
+    "min_precision_gate_rejections": 1,
+    "min_space_per_op": 200,
+    "oracle_is_optimal": true
+  },
+  "adversarial": {
+    "mantissa_bits": [
+      2,
+      4,
+      6,
+      8,
+      10,
+      12,
+      16,
+      20
+    ]
+  },
+  "baseline": {
+    "layernorm": {
+      "accum_dtype": "fp32",
+      "memory_layout": "naive",
+      "num_stages": 1,
+      "num_warps": 1,
+      "scheduling_strategy": "default",
+      "tile_k": 1,
+      "tile_m": 1,
+      "tile_n": 32,
+      "vector_width": 1
+    },
+    "matmul": {
+      "accum_dtype": "fp32",
+      "memory_layout": "naive",
+      "num_stages": 1,
+      "num_warps": 1,
+      "scheduling_strategy": "default",
+      "tile_k": 8,
+      "tile_m": 16,
+      "tile_n": 16,
+      "vector_width": 1
+    },
+    "softmax": {
+      "accum_dtype": "fp32",
+      "memory_layout": "naive",
+      "num_stages": 1,
+      "num_warps": 1,
+      "scheduling_strategy": "default",
+      "tile_k": 1,
+      "tile_m": 1,
+      "tile_n": 32,
+      "vector_width": 1
+    }
+  },
+  "budget_sweep": {
+    "budgets": [
+      10,
+      20,
+      30,
+      40,
+      60,
+      80,
+      120
+    ],
+    "strategy": "reject",
+    "tolerance": 0.001
+  },
+  "constraints": {
+    "drift_scale": 1.0,
+    "penalty_weight": 1.0,
+    "strategy": "reject"
+  },
+  "cost": {
+    "ai_saturate": 8.0,
+    "bytes_per_us": 400000.0,
+    "dtype_bytes_per_elem": {
+      "bf16": 2,
+      "fp32": 4,
+      "tf32": 4
+    },
+    "flops_per_us": 20000000.0,
+    "launch_overhead_us": 3.0,
+    "layout_eff": {
+      "naive": 0.8,
+      "swizzled": 1.0,
+      "vectorized": 1.1
+    },
+    "row_op_flops_per_elem": 8.0,
+    "sched_eff": {
+      "default": 1.0,
+      "persistent": 1.2,
+      "pipelined": 1.1
+    },
+    "vec_eff": {
+      "1": 0.85,
+      "2": 1.0
+    }
+  },
+  "cost_sweep": {
+    "launch_overhead_us": [
+      0.0,
+      0.3,
+      1.0,
+      3.0,
+      10.0,
+      30.0
+    ]
+  },
+  "expectations": {
+    "analytic_latency_tracks_wallclock": {
+      "claim": "解析延迟与实测求值时间的排序同向（秩相关 ≥ 0.5）",
+      "expect": true
+    },
+    "bf16_is_free": {
+      "claim": "bf16 在宽松容差下既最快又仍然诚实（门 2 不拒它）",
+      "expect": true
+    },
+    "default_tolerance_admits_all_precisions": {
+      "claim": "`semantics.tolerance` 的默认值能收下全部三个精度档",
+      "expect": true
+    },
+    "effective_bits_has_a_sqrt_n_bias": {
+      "claim": "实测有效位宽 ≈ 声明位宽 − 0.5·log2(累加步数)（在 1 位以内）",
+      "expect": true
+    },
+    "ladder_buys_speed": {
+      "claim": "放宽容差能买到速度（最优可行 kernel 的加速比随 τ 上升）",
+      "expect": true
+    },
+    "launch_overhead_dominates_the_speedup": {
+      "claim": "把 launch_overhead_us 扫到 0 后，最优 kernel 的加速比大幅缩小",
+      "expect": true
+    },
+    "memory_layout_is_numerically_inert": {
+      "claim": "memory_layout 对误差的影响**恰好为零**（它只改访存，不改加法树）",
+      "expect": true
+    },
+    "num_warps_is_an_accuracy_gene": {
+      "claim": "num_warps 影响误差（块内多一层规约树）—— 它不是纯速度基因",
+      "expect": true
+    },
+    "precision_gate_is_needed": {
+      "claim": "存在一个 τ：门 1 放行、门 2 拒掉的 kernel 真的存在",
+      "expect": true
+    },
+    "precision_gate_never_rejects_legal": {
+      "claim": "门 2 不误伤任何合法 kernel（slack 标定得够宽）",
+      "expect": true
+    },
+    "random_saturates_at_main_budget": {
+      "claim": "主预算下随机搜索已拿到 oracle 的全部超体积",
+      "expect": true
+    },
+    "safe_tolerance_window_is_nonempty": {
+      "claim": "存在一个容差区间：全部**合法**精度通过、全部**非法**扰动被拒",
+      "expect": true
+    },
+    "searchers_beat_random": {
+      "claim": "在主预算下，非随机搜索器都优于随机搜索",
+      "expect": true
+    },
+    "soft_constraint_changes_the_answer": {
+      "claim": "把硬约束换成软约束会改变交出去的答案",
+      "expect": true
+    },
+    "three_objectives_are_independent": {
+      "claim": "三个目标轴互不冗余（两两 |corr| < 0.95）",
+      "expect": true
+    },
+    "tile_k_trades_accuracy_for_speed": {
+      "claim": "tile_k 越大越准（块内规约树更深）但越慢",
+      "expect": true
+    }
+  },
+  "genome": {
+    "accum_dtype": [
+      "fp32",
+      "tf32",
+      "bf16"
+    ],
+    "memory_layout": [
+      "naive",
+      "swizzled",
+      "vectorized"
+    ],
+    "num_stages": [
+      1,
+      2,
+      3
+    ],
+    "num_warps": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "scheduling_strategy": [
+      "default",
+      "pipelined",
+      "persistent"
+    ],
+    "tile_k": [
+      8,
+      16,
+      32
+    ],
+    "tile_m": [
+      8,
+      16
+    ],
+    "tile_n": [
+      8,
+      16,
+      32
+    ],
+    "vector_width": [
+      1,
+      2
+    ]
+  },
+  "ladder": {
+    "tolerances": [
+      0.0,
+      1e-08,
+      1e-07,
+      1e-06,
+      1e-05,
+      0.0001,
+      0.001,
+      0.01,
+      0.1,
+      1.0
+    ]
+  },
+  "numerics": {
+    "error_floor": 1e-12,
+    "precision_slack_bits": 0.6
+  },
+  "ops": {
+    "layernorm": {
+      "eps": 1e-05,
+      "input_scale": 1.5,
+      "probe": [
+        16,
+        48,
+        1
+      ],
+      "production": [
+        256,
+        4096,
+        1
+      ],
+      "row_wise": true
+    },
+    "matmul": {
+      "input_scale": 0.6,
+      "probe": [
+        24,
+        32,
+        32
+      ],
+      "production": [
+        512,
+        512,
+        512
+      ],
+      "row_wise": false
+    },
+    "softmax": {
+      "input_scale": 2.0,
+      "probe": [
+        16,
+        48,
+        1
+      ],
+      "production": [
+        256,
+        4096,
+        1
+      ],
+      "row_wise": true
+    }
+  },
+  "search": {
+    "beam_width": 4,
+    "budget_per_searcher": 120,
+    "mutation_rate": 0.35,
+    "population": 12,
+    "reference_pad": 0.02,
+    "searchers": [
+      "random",
+      "greedy",
+      "beam",
+      "evolution"
+    ],
+    "tight_budget": 20
+  },
+  "seed": 20261004,
+  "semantics": {
+    "tolerance": 1e-05
+  }
+}
