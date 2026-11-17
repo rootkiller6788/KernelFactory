@@ -3,4 +3,8 @@ __pycache__/
 *.pyc
 *.egg-info/
 .pytest_cache/
-.scratch/
+# `.scratch/` 里是**可复现的证据脚本**，README 多处引用它们 —— 必须进库。
+# 只忽略运行产物（det/ 对比报告、日志、临时输出）。
+.scratch/*
+!.scratch/*.py
+!.scratch/mutation.json
