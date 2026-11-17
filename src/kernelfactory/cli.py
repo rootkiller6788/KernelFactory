@@ -81,8 +81,9 @@ def _emit_json(obj: Any) -> None:
     pytest 的输出捕获 / 上层重新绑定 stdout 都会失效 —— 而失效方式很隐蔽：
     JSON 跑到旧流里，测试看到空 stdout。流在调用时取，才是它该被读的时刻。
     """
-    sys.stdout.write(json.dumps(obj, ensure_ascii=False, indent=2,
-                                sort_keys=True) + "\n")
+    text = json.dumps(obj, ensure_ascii=False, indent=2, sort_keys=True,
+                      allow_nan=False) + "\n"
+    sys.stdout.write(text)
     sys.stdout.flush()
 
 
