@@ -1,0 +1,46 @@
+name: CI
+
+# 两条路径都必须是绿的：
+#   - 流水线自身的运行时核对（acceptance 18 条 + 对抗用例 58 条）；
+#   - 入口/CLI/只读契约（tests/）。
+# 不跑 check_readme.py：附录 B.12 的实测耗时是**本机读数**，换机器必然不同。
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    name: ${{ matrix.os }} / py${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install pytest
+        run: python -m pip install --upgrade pip pytest
+
+      - name: Run full pipeline
+        run: python main.py run
+
+      - name: Unit + contract tests
+        run: python -m pytest -q
+
+      - name: Acceptance gates + adversarial cases
+        run: python main.py check
+
+      - name: Read-only report rebuild
+        run: python main.py visualize
+
+      - name: Determinism (two runs, bit-identical except timings)
+        if: runner.os == 'Linux'
+        run: python main.py verify
