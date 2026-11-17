@@ -259,6 +259,7 @@ L6-kernelfactory/
 
 ```bash
 cd L6-kernelfactory
+python main.py --version        # 只读：打印版本（不跑流水线）
 python main.py run              # 端到端跑通并落盘（~12 s）
 python main.py check            # 只读：重跑验收（rc=1 表示有门槛未通过）
 python main.py visualize        # 只读：从 out/ 重建报告并比对（~0.4 s）

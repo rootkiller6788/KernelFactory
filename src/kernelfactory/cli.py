@@ -35,7 +35,7 @@ import tempfile
 from pathlib import Path
 from typing import Any, Iterator
 
-from . import pipeline
+from . import __version__, pipeline
 from .config import ConfigError, dump_config, load_config
 from .emit import emit
 from .report import render_html, render_markdown
@@ -106,6 +106,9 @@ def _build_parser() -> argparse.ArgumentParser:
         prog="kernelfactory",
         description="KernelFactory：Kernel 生成的搜索闭环（硬约束 = 一致性 + 声明）",
     )
+    # 顶层开关：`main.py --version`（不跑流水线、不读配置）。
+    p.add_argument("--version", action="version",
+                   version=f"%(prog)s {__version__}")
     p.add_argument("--root", default=None, help="项目根（默认 = 本文件所在项目）")
     sub = p.add_subparsers(dest="cmd", required=True)
 
