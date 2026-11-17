@@ -28,6 +28,7 @@ import argparse
 import contextlib
 import io
 import json
+import os
 import shutil
 import sys
 import tempfile
@@ -450,6 +451,21 @@ _COMMANDS = {"run": cmd_run, "visualize": cmd_visualize, "check": cmd_check,
              "dump-config": cmd_dump_config}
 
 
+def _silence_stdout() -> None:
+    """管道被下游关掉之后的善后。
+
+    `main.py show | head -1` 会让 stdout 在写入时抛 `BrokenPipeError`。
+    只 catch 还不够：解释器退出时还会再 flush 一次，打印一条
+    `Exception ignored` 的噪音。把 stdout 换成 devnull 是标准收尾。
+    """
+    try:
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(devnull, sys.stdout.fileno())
+        os.close(devnull)
+    except (AttributeError, OSError, ValueError):
+        pass
+
+
 def main(argv: list[str] | None = None) -> int:
     # 必须在 `parse_args` **之前**：argparse 打印 `--help` 时就会写 stdout，
     # 等命令跑起来再改编码已经晚了（第一次 `--help` 就会崩）。
@@ -464,6 +480,13 @@ def main(argv: list[str] | None = None) -> int:
     except ConfigError as exc:
         print(f"配置错误：{exc}", file=sys.stderr)
         return 2
+    except BrokenPipeError:
+        # `| head` / `| jq` 提前关闭：这不是错误，但也不该留下 traceback。
+        _silence_stdout()
+        return 1
+    except KeyboardInterrupt:
+        print("已中断。", file=sys.stderr)
+        return 130
 
 
 __all__ = ["main", "ROOT", "_anchor_args", "_build_parser"]
